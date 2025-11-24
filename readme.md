@@ -10,6 +10,7 @@
 - File Upload
 
 
+### install :git 
 ``` sh
 npm install
 npm start
