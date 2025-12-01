@@ -23,7 +23,7 @@ class AuthController {
                 return res.status(400).json({ success: false, message: 'Email Registered' })
             }
 
-            const hash = hashcode(password);
+            const hash = await hashcode(password);
             await UserModel.createNewUser(name, email, hash);
             res.status(201).json({
                 success: true, message: 'Register Success',
@@ -49,11 +49,18 @@ class AuthController {
             if (!user) {
                 return res.status(401).json({ success: false, message: "Invalid Email or Password" });
             } else {
-                const isPasswordValid = await bcrypt.compareSync(body.password, user.password);
+                // const isPasswordValid = await bcrypt.compareSync(body.password, user.password);
+                const isPasswordValid = await bcrypt.compare(body.password, user.password);
                 if (!isPasswordValid) {
                     return res.status(401).json({ success: false, message: "Invalid Email or Password" });
                 } else {
-                    const token = jwt.sign({ id: user.id, email: user.email, name: user.name }, process.env.JWT_SECRET);
+                    const token = jwt.sign({
+                        sub: user.id,
+                        email: user.email,
+                        name: user.name,
+                    },
+                        process.env.JWT_SECRET,
+                        { expiresIn: `${process.env.EXP_TOKEN_ACCESS}` });
                     res.json({ success: true, message: 'GET users by ID success', token: token })
                 }
             }
@@ -119,7 +126,7 @@ class AuthController {
                 return res.status(400).json({ success: false, message: 'Invalid or expired reset token' });
             }
 
-            const hash = hashcode(password);
+            const hash = await hashcode(password);
             await UserModel.updatePassword(resetRecord.email, hash);
             await tokenpass.deleteToken(token);
             await tokenpass.deleteByEmail(resetRecord.email);
